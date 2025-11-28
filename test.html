@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>测试</title>
+</head>
+<body>
+    <h1>测试页面</h1>
+    <canvas id="testCanvas" width="800" height="600" style="border: 1px solid black;"></canvas>
+    <script>
+        console.log('脚本开始执行');
+        const canvas = document.getElementById('testCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        // 绘制一个简单的矩形
+        ctx.fillStyle = 'red';
+        ctx.fillRect(50, 50, 200, 100);
+        
+        // 绘制文字
+        ctx.fillStyle = 'blue';
+        ctx.font = '30px Arial';
+        ctx.fillText('Canvas 测试成功！', 100, 200);
+        
+        console.log('Canvas 绘制完成');
+    </script>
+</body>
+</html>

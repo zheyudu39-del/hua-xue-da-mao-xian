@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sin函数跳跃曲线可视化</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 30px;
+            border-radius: 20px;
+            backdrop-filter: blur(10px);
+        }
+        h1 {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        canvas {
+            display: block;
+            margin: 20px auto;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+        .controls {
+            text-align: center;
+            margin: 20px 0;
+        }
+        .control-group {
+            display: inline-block;
+            margin: 10px 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input[type="range"] {
+            width: 200px;
+        }
+        .value {
+            display: inline-block;
+            min-width: 50px;
+            text-align: center;
+            background: rgba(255, 255, 255, 0.2);
+            padding: 5px 10px;
+            border-radius: 5px;
+            margin-left: 10px;
+        }
+        button {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 16px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 10px;
+            transition: all 0.3s;
+        }
+        button:hover {
+            background: #45a049;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        }
+        .info {
+            background: rgba(255, 255, 255, 0.15);
+            padding: 20px;
+            border-radius: 10px;
+            margin-top: 20px;
+        }
+        .formula {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 15px;
+            border-radius: 5px;
+            font-family: 'Courier New', monospace;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎿 Sin函数抛物线跳跃可视化</h1>
+        
+        <canvas id="canvas" width="1000" height="400"></canvas>
+        
+        <div class="controls">
+            <button id="startBtn">开始动画</button>
+            <button id="resetBtn">重置</button>
+        </div>
+        
+        <div class="controls">
+            <div class="control-group">
+                <label>跳跃高度: <span class="value" id="heightValue">120</span></label>
+                <input type="range" id="heightSlider" min="50" max="200" value="120">
+            </div>
+            <div class="control-group">
+                <label>跳跃速度: <span class="value" id="speedValue">0.02</span></label>
+                <input type="range" id="speedSlider" min="0.01" max="0.05" step="0.001" value="0.02">
+            </div>
+        </div>
+        
+        <div class="info">
+            <h3>📐 数学原理</h3>
+            <div class="formula">
+                y = startY - sin(π × progress) × height
+            </div>
+            <p><strong>说明：</strong></p>
+            <ul>
+                <li><strong>progress</strong>: 从0到1的跳跃进度</li>
+                <li><strong>sin(π × progress)</strong>: 在0到1之间形成完美的抛物线</li>
+                <li><strong>height</strong>: 跳跃的最大高度</li>
+            </ul>
+            
+            <h3>🎭 身体姿态</h3>
+            <div class="formula">
+                pose = -cos(π × progress) × 0.8
+            </div>
+            <p><strong>说明：</strong></p>
+            <ul>
+                <li><strong>上升阶段</strong> (progress < 0.5): 身体向后仰</li>
+                <li><strong>最高点</strong> (progress = 0.5): 身体水平</li>
+                <li><strong>下降阶段</strong> (progress > 0.5): 身体向前倾</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        
+        let isAnimating = false;
+        let progress = 0;
+        let jumpHeight = 120;
+        let jumpSpeed = 0.02;
+        let trajectoryPoints = [];
+        
+        const startY = 300;
+        const startX = 100;
+        const endX = 900;
+        
+        // 控制器
+        const heightSlider = document.getElementById('heightSlider');
+        const speedSlider = document.getElementById('speedSlider');
+        const heightValue = document.getElementById('heightValue');
+        const speedValue = document.getElementById('speedValue');
+        const startBtn = document.getElementById('startBtn');
+        const resetBtn = document.getElementById('resetBtn');
+        
+        heightSlider.addEventListener('input', (e) => {
+            jumpHeight = parseInt(e.target.value);
+            heightValue.textContent = jumpHeight;
+        });
+        
+        speedSlider.addEventListener('input', (e) => {
+            jumpSpeed = parseFloat(e.target.value);
+            speedValue.textContent = jumpSpeed.toFixed(3);
+        });
+        
+        startBtn.addEventListener('click', () => {
+            isAnimating = !isAnimating;
+            startBtn.textContent = isAnimating ? '暂停动画' : '开始动画';
+            if (isAnimating) animate();
+        });
+        
+        resetBtn.addEventListener('click', () => {
+            progress = 0;
+            trajectoryPoints = [];
+            isAnimating = false;
+            startBtn.textContent = '开始动画';
+            draw();
+        });
+        
+        function draw() {
+            // 清空画布
+            ctx.fillStyle = '#f0f0f0';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // 绘制网格
+            ctx.strokeStyle = '#ddd';
+            ctx.lineWidth = 1;
+            for (let i = 0; i < canvas.width; i += 50) {
+                ctx.beginPath();
+                ctx.moveTo(i, 0);
+                ctx.lineTo(i, canvas.height);
+                ctx.stroke();
+            }
+            for (let i = 0; i < canvas.height; i += 50) {
+                ctx.beginPath();
+                ctx.moveTo(0, i);
+                ctx.lineTo(canvas.width, i);
+                ctx.stroke();
+            }
+            
+            // 绘制地面
+            ctx.fillStyle = '#8B4513';
+            ctx.fillRect(0, startY, canvas.width, canvas.height - startY);
+            
+            // 绘制起点和终点标记
+            ctx.fillStyle = '#4CAF50';
+            ctx.beginPath();
+            ctx.arc(startX, startY, 5, 0, Math.PI * 2);
+            ctx.fill();
+            
+            ctx.fillStyle = '#f44336';
+            ctx.beginPath();
+            ctx.arc(endX, startY, 5, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // 绘制完整的sin曲线（预览）
+            ctx.strokeStyle = 'rgba(100, 100, 255, 0.3)';
+            ctx.lineWidth = 2;
+            ctx.setLineDash([5, 5]);
+            ctx.beginPath();
+            for (let i = 0; i <= 100; i++) {
+                const p = i / 100;
+                const x = startX + (endX - startX) * p;
+                const sinValue = Math.sin(Math.PI * p);
+                const y = startY - sinValue * jumpHeight;
+                if (i === 0) {
+                    ctx.moveTo(x, y);
+                } else {
+                    ctx.lineTo(x, y);
+                }
+            }
+            ctx.stroke();
+            ctx.setLineDash([]);
+            
+            // 绘制轨迹
+            if (trajectoryPoints.length > 1) {
+                ctx.strokeStyle = 'rgba(255, 100, 100, 0.8)';
+                ctx.lineWidth = 4;
+                ctx.lineCap = 'round';
+                ctx.shadowColor = 'rgba(255, 100, 100, 0.5)';
+                ctx.shadowBlur = 10;
+                
+                ctx.beginPath();
+                ctx.moveTo(trajectoryPoints[0].x, trajectoryPoints[0].y);
+                for (let i = 1; i < trajectoryPoints.length; i++) {
+                    ctx.lineTo(trajectoryPoints[i].x, trajectoryPoints[i].y);
+                }
+                ctx.stroke();
+                ctx.shadowBlur = 0;
+                
+                // 绘制轨迹点
+                ctx.fillStyle = 'rgba(255, 150, 150, 0.8)';
+                for (let i = 0; i < trajectoryPoints.length; i += 2) {
+                    ctx.beginPath();
+                    ctx.arc(trajectoryPoints[i].x, trajectoryPoints[i].y, 3, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            }
+            
+            // 计算当前位置
+            const sinValue = Math.sin(Math.PI * progress);
+            const currentX = startX + (endX - startX) * progress;
+            const currentY = startY - sinValue * jumpHeight;
+            
+            // 计算姿态角度
+            const cosValue = Math.cos(Math.PI * progress);
+            const poseAngle = -cosValue * 0.4;
+            
+            // 绘制熊猫（简化版）
+            ctx.save();
+            ctx.translate(currentX, currentY);
+            ctx.rotate(poseAngle);
+            
+            // 身体
+            ctx.fillStyle = '#333';
+            ctx.fillRect(-15, -15, 30, 30);
+            
+            // 头
+            ctx.fillStyle = '#fff';
+            ctx.beginPath();
+            ctx.arc(0, -20, 12, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // 眼睛
+            ctx.fillStyle = '#000';
+            ctx.beginPath();
+            ctx.arc(-5, -20, 3, 0, Math.PI * 2);
+            ctx.arc(5, -20, 3, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // 滑雪板
+            ctx.fillStyle = '#ff6b6b';
+            ctx.fillRect(-20, 10, 40, 5);
+            
+            ctx.restore();
+            
+            // 显示信息
+            ctx.fillStyle = '#333';
+            ctx.font = 'bold 16px Arial';
+            ctx.fillText(`进度: ${(progress * 100).toFixed(1)}%`, 20, 30);
+            ctx.fillText(`高度: ${(sinValue * jumpHeight).toFixed(1)}px`, 20, 55);
+            ctx.fillText(`姿态角度: ${(poseAngle * 180 / Math.PI).toFixed(1)}°`, 20, 80);
+            
+            // 绘制sin和cos曲线图
+            drawMathGraph();
+        }
+        
+        function drawMathGraph() {
+            const graphX = 650;
+            const graphY = 50;
+            const graphWidth = 300;
+            const graphHeight = 150;
+            
+            // 背景
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+            ctx.fillRect(graphX, graphY, graphWidth, graphHeight);
+            ctx.strokeStyle = '#333';
+            ctx.lineWidth = 2;
+            ctx.strokeRect(graphX, graphY, graphWidth, graphHeight);
+            
+            // 坐标轴
+            ctx.strokeStyle = '#999';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(graphX, graphY + graphHeight / 2);
+            ctx.lineTo(graphX + graphWidth, graphY + graphHeight / 2);
+            ctx.stroke();
+            
+            // Sin曲线
+            ctx.strokeStyle = '#ff6b6b';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            for (let i = 0; i <= 100; i++) {
+                const p = i / 100;
+                const x = graphX + p * graphWidth;
+                const sinValue = Math.sin(Math.PI * p);
+                const y = graphY + graphHeight / 2 - sinValue * (graphHeight / 2 - 10);
+                if (i === 0) {
+                    ctx.moveTo(x, y);
+                } else {
+                    ctx.lineTo(x, y);
+                }
+            }
+            ctx.stroke();
+            
+            // Cos曲线
+            ctx.strokeStyle = '#4CAF50';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            for (let i = 0; i <= 100; i++) {
+                const p = i / 100;
+                const x = graphX + p * graphWidth;
+                const cosValue = Math.cos(Math.PI * p);
+                const y = graphY + graphHeight / 2 - cosValue * (graphHeight / 2 - 10);
+                if (i === 0) {
+                    ctx.moveTo(x, y);
+                } else {
+                    ctx.lineTo(x, y);
+                }
+            }
+            ctx.stroke();
+            
+            // 当前位置标记
+            const currentX = graphX + progress * graphWidth;
+            const sinValue = Math.sin(Math.PI * progress);
+            const cosValue = Math.cos(Math.PI * progress);
+            const sinY = graphY + graphHeight / 2 - sinValue * (graphHeight / 2 - 10);
+            const cosY = graphY + graphHeight / 2 - cosValue * (graphHeight / 2 - 10);
+            
+            ctx.fillStyle = '#ff6b6b';
+            ctx.beginPath();
+            ctx.arc(currentX, sinY, 5, 0, Math.PI * 2);
+            ctx.fill();
+            
+            ctx.fillStyle = '#4CAF50';
+            ctx.beginPath();
+            ctx.arc(currentX, cosY, 5, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // 标签
+            ctx.fillStyle = '#333';
+            ctx.font = '12px Arial';
+            ctx.fillText('sin(πx) - 高度', graphX + 5, graphY + 15);
+            ctx.fillStyle = '#4CAF50';
+            ctx.fillText('cos(πx) - 姿态', graphX + 5, graphY + 30);
+        }
+        
+        function animate() {
+            if (!isAnimating) return;
+            
+            progress += jumpSpeed;
+            
+            if (progress >= 1) {
+                progress = 0;
+                trajectoryPoints = [];
+            }
+            
+            // 记录轨迹点
+            const sinValue = Math.sin(Math.PI * progress);
+            const currentX = startX + (endX - startX) * progress;
+            const currentY = startY - sinValue * jumpHeight;
+            trajectoryPoints.push({ x: currentX, y: currentY });
+            
+            draw();
+            requestAnimationFrame(animate);
+        }
+        
+        // 初始绘制
+        draw();
+    </script>
+</body>
+</html>

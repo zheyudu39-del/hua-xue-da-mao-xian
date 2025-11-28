@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>熊猫滑雪大冒险 - Panda Ski Adventure</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="game-container">
+        <canvas id="gameCanvas"></canvas>
+        <div id="ui-overlay">
+            <div id="score-panel">
+                <div class="stat">
+                    <span class="label">距离</span>
+                    <span id="distance" class="value">0m</span>
+                </div>
+                <div class="stat">
+                    <span class="label">速度</span>
+                    <span id="speed" class="value">0</span>
+                </div>
+                <div class="stat">
+                    <span class="label">碰撞</span>
+                    <span id="collisions" class="value">0/10</span>
+                </div>
+                <div class="stat" id="fps-stat" style="display: none;">
+                    <span class="label">FPS</span>
+                    <span id="fps" class="value">60</span>
+                </div>
+            </div>
+            <div id="combo-display"></div>
+        </div>
+        <div id="intro-animation" class="screen">
+            <canvas id="introCanvas"></canvas>
+        </div>
+        <div id="start-screen" class="screen hidden">
+            <h1>🎿 滑雪大冒险</h1>
+            <p class="instructions">
+                ⌨️ <strong>按空格键</strong> - 跳跃<br>
+                🏍️ 骑上企鹅和雪地摩托获得加速！<br>
+                ⚠️ 避免撞击石头（碰撞10次会引发雪崩）<br>
+                🏠 小屋可以跳到屋顶上或骑摩托撞碎
+            </p>
+            <button id="start-btn" class="game-btn">开始游戏</button>
+        </div>
+        <div id="game-over-screen" class="screen hidden">
+            <h1>游戏结束</h1>
+            <div id="final-stats">
+                <p>最终距离: <span id="final-distance">0</span>m</p>
+                <p>最高速度: <span id="final-speed">0</span></p>
+                <p>碰撞次数: <span id="final-collisions">0</span></p>
+            </div>
+            <button id="restart-btn" class="game-btn">重新开始</button>
+        </div>
+    </div>
+    <script src="intro_cinematic.js"></script>
+    <script src="game.js"></script>
+</body>
+</html>
